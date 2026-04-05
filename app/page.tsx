@@ -1,240 +1,237 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Camera, Plane, Search, Share2, BellRing, UserCircle2, Package2 } from "lucide-react";
+import { useMemo, useState } from "react";
 
-type Stage = "login" | "hub" | "loading" | "result";
+import { InstallPrompt } from "@/components/install-prompt";
+import { SkeletonLoader } from "@/components/skeleton-loader";
+import { Timeline, TimelineItem } from "@/components/timeline";
 
-const recentAwbs = ["123-45678901", "GLS88293001", "618-22446688"];
+type TrackingData = {
+  awb: string;
+  statusLabel: string;
+  route: {
+    origin: string;
+    destination: string;
+  };
+  details: {
+    pieces: string;
+    weight: string;
+    commodity: string;
+    airline: string;
+  };
+  timeline: TimelineItem[];
+};
 
-export default function Home() {
-  const [showSplash, setShowSplash] = useState(true);
-  const [stage, setStage] = useState<Stage>("login");
-  const [awb, setAwb] = useState("");
-  const [trackedAwb, setTrackedAwb] = useState("GLS88293001");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [modal, setModal] = useState<{ title: string; text: string } | null>(null);
+const RECENT_AWBS = ["123-45678901", "GLS88293001", "618-22446688"];
 
-  useEffect(() => {
-    const timer = setTimeout(() => setShowSplash(false), 1500);
-    return () => clearTimeout(timer);
-  }, []);
+const DUMMY_DATA: Omit<TrackingData, "awb"> = {
+  statusLabel: "IN TRANSIT - SINGAPORE SIN",
+  route: {
+    origin: "CGK - Jakarta",
+    destination: "LHR - London"
+  },
+  details: {
+    pieces: "5 pieces",
+    weight: "1,200 kg",
+    commodity: "Engine Spare Parts",
+    airline: "Garuda Indonesia (GA)"
+  },
+  timeline: [
+    {
+      id: "1",
+      title: "Departed",
+      location: "Singapore (SIN)",
+      datetime: "15 Oct 2023, 10:00 SGT",
+      status: "done"
+    },
+    {
+      id: "2",
+      title: "Arrived at Transit",
+      location: "Singapore (SIN)",
+      datetime: "15 Oct 2023, 08:00 SGT",
+      status: "done"
+    },
+    {
+      id: "3",
+      title: "Departed",
+      location: "Jakarta (CGK)",
+      datetime: "15 Oct 2023, 05:00 WIB",
+      status: "active"
+    },
+    {
+      id: "4",
+      title: "Booking Confirmed",
+      location: "Jakarta (CGK)",
+      datetime: "14 Oct 2023, 16:00 WIB",
+      status: "upcoming"
+    }
+  ]
+};
 
-  const timeline = useMemo(
-    () => [
-      { status: "done", title: "Departed", place: "Singapore (SIN)", time: "15 Oct 2023, 10:00 SGT" },
-      { status: "done", title: "Arrived at Transit", place: "Singapore (SIN)", time: "15 Oct 2023, 08:00 SGT" },
-      { status: "active", title: "Departed", place: "Jakarta (CGK)", time: "15 Oct 2023, 05:00 WIB" },
-      { status: "idle", title: "Booking Confirmed", place: "Jakarta (CGK)", time: "14 Oct 2023, 16:00 WIB" }
-    ],
+export default function HomePage() {
+  const [awbInput, setAwbInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [trackingData, setTrackingData] = useState<TrackingData | null>(null);
+
+  const headerDate = useMemo(
+    () =>
+      new Intl.DateTimeFormat("en-US", {
+        weekday: "short",
+        day: "2-digit",
+        month: "short"
+      }).format(new Date()),
     []
   );
 
-  const doLogin = () => {
-    if (!email.trim() || !password.trim()) {
-      setModal({ title: "Missing details", text: "Please enter demo email and password to continue." });
-      return;
-    }
-    setStage("hub");
-  };
+  const handleTrack = (presetAwb?: string) => {
+    const awb = (presetAwb ?? awbInput).trim();
+    if (!awb) return;
 
-  const trackAwb = (value?: string) => {
-    const target = (value ?? awb).trim();
-    if (!target) {
-      setModal({ title: "AWB required", text: "Please input an AWB number first." });
-      return;
-    }
-
-    setTrackedAwb(target);
-    setStage("loading");
+    setIsLoading(true);
+    setTrackingData(null);
 
     window.setTimeout(() => {
-      setStage("result");
+      setTrackingData({ awb, ...DUMMY_DATA });
+      setIsLoading(false);
       window.scrollTo({ top: 0, behavior: "smooth" });
-    }, 1000);
+    }, 1500);
   };
 
   return (
-    <>
-      {showSplash && (
-        <div className="splash">
-          <div className="splash-card">
-            <div className="plane">✈</div>
-            <h1>GLS Aero</h1>
-            <p>PREMIUM CARGO TRACKING</p>
+    <main className="min-h-screen bg-slate-50 pb-20">
+      <header className="bg-gradient-to-r from-blue-900 to-slate-800 px-4 pb-8 pt-7 text-white shadow-lg sm:px-6">
+        <div className="mx-auto flex w-full max-w-3xl items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="rounded-2xl bg-white/15 p-2.5 backdrop-blur">
+              <Plane className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-base font-semibold">GLS Aero Tracking</p>
+              <p className="text-xs text-blue-100">{headerDate}</p>
+            </div>
           </div>
+          <UserCircle2 className="h-8 w-8 text-blue-100" />
         </div>
-      )}
+      </header>
 
-      <main className="outer-shell">
-        <div className="airline-bg" />
-        <section className="mobile-shell">
-          {stage === "login" && (
-            <div className="page-block fade-in">
-              <div className="hero-card">
-                <div className="brand-row">
-                  <div className="brand-box">✈</div>
-                  <div>
-                    <h2>GLS Aero</h2>
-                    <span>Executive Cargo Operations</span>
-                  </div>
-                  <button className="ghost-btn" onClick={() => setModal({ title: "Install App", text: "PWA install simulation: add GLS Aero to your home screen for standalone mode." })}>
-                    Install App
-                  </button>
-                </div>
+      <section className="relative -mt-5 px-4 sm:px-6">
+        <div className="mx-auto max-w-3xl space-y-5">
+          <div className="bg-white/90 backdrop-blur-md rounded-3xl shadow-xl border border-slate-100 p-8">
+            <p className="text-2xl font-bold text-slate-900">Track Your Air Cargo Shipment</p>
+            <p className="mt-1 text-sm text-slate-500">Enter AWB number to get enterprise-grade status visibility.</p>
 
-                <h3>Sign in to Premium AWB Tracking</h3>
-                <p>Experience enterprise-grade shipment visibility with a luxury airline app aesthetic.</p>
-
-                <label>Email address</label>
-                <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="ops@glsaero.com" type="email" />
-                <label>Password</label>
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+              <div className="relative flex-1">
                 <input
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  type="password"
-                  onKeyDown={(e) => e.key === "Enter" && doLogin()}
+                  value={awbInput}
+                  onChange={(event) => setAwbInput(event.target.value)}
+                  placeholder="Enter AWB Number (example: 123-45678901)"
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 pr-24 font-mono text-sm outline-none ring-sky-100 transition focus:border-sky-400 focus:ring-4"
                 />
-                <button className="primary-btn" onClick={doLogin}>
-                  Enter Dashboard
+                <button
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl border border-slate-200 p-2 text-slate-500 transition hover:border-sky-200 hover:text-sky-500"
+                  aria-label="Barcode scan placeholder"
+                >
+                  <Camera className="h-4 w-4" />
                 </button>
               </div>
 
-              <div className="info-card">
-                <p className="card-title">Why teams choose GLS Aero</p>
-                <ul>
-                  <li>Global AWB lifecycle visibility in one view.</li>
-                  <li>Smart timeline for faster operations decisions.</li>
-                  <li>Push-ready status alerts for critical shipments.</li>
-                </ul>
+              <button
+                onClick={() => handleTrack()}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-900 px-5 py-3 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-blue-900/25"
+              >
+                <Search className="h-4 w-4" />
+                Track Now
+              </button>
+            </div>
+
+            <div className="mt-5">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Recent Searches</p>
+              <div className="flex flex-wrap gap-2">
+                {RECENT_AWBS.map((awb) => (
+                  <button
+                    key={awb}
+                    onClick={() => {
+                      setAwbInput(awb);
+                      handleTrack(awb);
+                    }}
+                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-xs text-slate-600 transition hover:border-sky-200 hover:text-sky-600"
+                  >
+                    {awb}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {isLoading && <SkeletonLoader />}
+
+          {!isLoading && trackingData && (
+            <div className="animate-in fade-in duration-500 space-y-4">
+              <article className="rounded-3xl bg-gradient-to-r from-blue-900 to-slate-800 p-6 text-white shadow-xl">
+                <p className="text-xs uppercase tracking-[0.2em] text-sky-200">AWB Number</p>
+                <p className="mt-1 font-mono text-2xl font-bold">{trackingData.awb}</p>
+                <span className="mt-3 inline-flex rounded-full bg-amber-400 px-3 py-1 text-xs font-bold text-amber-900">
+                  {trackingData.statusLabel}
+                </span>
+
+                <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-sm">
+                  <div>
+                    <p className="font-semibold">{trackingData.route.origin}</p>
+                    <p className="text-xs text-blue-100">Origin</p>
+                  </div>
+                  <Plane className="mx-auto h-4 w-4 text-sky-300" />
+                  <div className="text-right">
+                    <p className="font-semibold">{trackingData.route.destination}</p>
+                    <p className="text-xs text-blue-100">Destination</p>
+                  </div>
+                </div>
+              </article>
+
+              <article className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+                <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
+                  <Package2 className="h-4 w-4 text-sky-500" />
+                  Cargo Details
+                </p>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <DetailItem label="Pieces" value={trackingData.details.pieces} />
+                  <DetailItem label="Total Weight" value={trackingData.details.weight} />
+                  <DetailItem label="Commodity" value={trackingData.details.commodity} />
+                  <DetailItem label="Airline" value={trackingData.details.airline} />
+                </div>
+              </article>
+
+              <article className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+                <p className="mb-4 text-sm font-semibold text-slate-900">Shipment Timeline</p>
+                <Timeline items={trackingData.timeline} />
+              </article>
+
+              <div className="grid grid-cols-2 gap-3">
+                <button className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-sky-200 hover:text-sky-600">
+                  <Share2 className="h-4 w-4" />
+                  Share Status
+                </button>
+                <button className="inline-flex items-center justify-center gap-2 rounded-2xl bg-sky-500 px-4 py-3 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-sky-600 hover:shadow-lg hover:shadow-sky-300/40">
+                  <BellRing className="h-4 w-4" />
+                  Enable Alerts
+                </button>
               </div>
             </div>
           )}
-
-          {stage !== "login" && (
-            <div className="app-body fade-in">
-              <header className="topbar">
-                <div className="brand-mini">
-                  <div>✈</div>
-                  <span>GLS Aero</span>
-                </div>
-                <button className="avatar">👤</button>
-              </header>
-
-              {stage === "hub" && (
-                <section className="page-block">
-                  <h1>Track Your Air Cargo Shipment</h1>
-                  <p className="subtitle">Enter your AWB to get premium shipment insights.</p>
-
-                  <div className="card">
-                    <label>AWB Number</label>
-                    <div className="input-wrap">
-                      <input
-                        className="mono"
-                        value={awb}
-                        onChange={(e) => setAwb(e.target.value)}
-                        placeholder="Enter AWB Number (example: 123-45678901)"
-                        onKeyDown={(e) => e.key === "Enter" && trackAwb()}
-                      />
-                      <button className="scan-btn" aria-label="Scan barcode simulation">
-                        📷
-                      </button>
-                    </div>
-                    <button className="primary-btn" onClick={() => trackAwb()}>
-                      Track Now
-                    </button>
-                  </div>
-
-                  <div className="recent-wrap">
-                    <p>Recent Searches</p>
-                    {recentAwbs.map((item) => (
-                      <button key={item} className="recent-item mono" onClick={() => trackAwb(item)}>
-                        {item}
-                      </button>
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {stage === "loading" && (
-                <section className="loading">
-                  <div className="spinner" />
-                  <p>Preparing premium tracking result...</p>
-                </section>
-              )}
-
-              {stage === "result" && (
-                <section className="page-block result">
-                  <article className="result-hero">
-                    <p className="overline">AWB Number</p>
-                    <h2 className="mono">{trackedAwb}</h2>
-                    <span className="badge transit">IN TRANSIT - SINGAPORE SIN</span>
-
-                    <div className="route">
-                      <div>
-                        <strong>CGK - Jakarta</strong>
-                        <small>Origin</small>
-                      </div>
-                      <span>✈</span>
-                      <div>
-                        <strong>LHR - London</strong>
-                        <small>Destination</small>
-                      </div>
-                    </div>
-                  </article>
-
-                  <article className="card">
-                    <p className="card-title">Cargo Details</p>
-                    <div className="grid-2">
-                      <div><small>Pieces</small><strong>5 pieces</strong></div>
-                      <div><small>Total Weight</small><strong>1,200 kg</strong></div>
-                      <div><small>Commodity</small><strong>Engine Spare Parts</strong></div>
-                      <div><small>Airline</small><strong>Garuda Indonesia (GA)</strong></div>
-                    </div>
-                  </article>
-
-                  <article className="card">
-                    <p className="card-title">Shipment Timeline</p>
-                    <div className="timeline">
-                      {timeline.map((item, idx) => (
-                        <div key={`${item.title}-${idx}`} className="t-item">
-                          <div className={`dot ${item.status}`} />
-                          <div>
-                            <strong>{item.title} - {item.place}</strong>
-                            <small>{item.time}</small>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </article>
-
-                  <div className="actions">
-                    <button className="secondary-btn" onClick={() => setModal({ title: "Share Status", text: "Native share simulation opened. AWB status is ready to share." })}>
-                      Share Status
-                    </button>
-                    <button className="accent-btn" onClick={() => setModal({ title: "Notifications Enabled", text: "Push notification simulation activated for this AWB." })}>
-                      Enable Alerts
-                    </button>
-                  </div>
-                </section>
-              )}
-            </div>
-          )}
-        </section>
-      </main>
-
-      {modal && (
-        <div className="modal-backdrop" onClick={() => setModal(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3>{modal.title}</h3>
-            <p>{modal.text}</p>
-            <button className="primary-btn" onClick={() => setModal(null)}>
-              Close
-            </button>
-          </div>
         </div>
-      )}
-    </>
+      </section>
+
+      <InstallPrompt />
+    </main>
+  );
+}
+
+function DetailItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl bg-slate-50 p-3">
+      <p className="text-xs text-slate-500">{label}</p>
+      <p className="mt-0.5 text-sm font-semibold text-slate-800">{value}</p>
+    </div>
   );
 }
